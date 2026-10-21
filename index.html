@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+<title>Ludothèque à 4</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: étagère de boîtes de jeu en grille, filtres en haut, fiche en dialog */
+:root{
+  --bg:#f3f2f7; --surface:#ffffff; --ink:#1d1b2e; --muted:#5f5b78; --line:#dcd9e8;
+  --accent:#e2572b; --accent-ink:#ffffff; --chip:#e8e6f1;
+  --coop:#2f7d6b; --solo:#4a5bd1; --team:#b0479a; --hidden:#a8761b;
+  --display:"Bricolage Grotesque", "Arial Narrow", system-ui, sans-serif;
+  --body:"Atkinson Hyperlegible", system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#15141f; --surface:#1f1d2c; --ink:#eeecf7; --muted:#a6a2bf; --line:#34314a;
+  --accent:#ff7a4d; --accent-ink:#1a0f0a; --chip:#2a2839;
+  --coop:#5cc4ab; --solo:#8b98ff; --team:#e584d0; --hidden:#e3b25a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#15141f; --surface:#1f1d2c; --ink:#eeecf7; --muted:#a6a2bf; --line:#34314a;
+  --accent:#ff7a4d; --accent-ink:#1a0f0a; --chip:#2a2839;
+  --coop:#5cc4ab; --solo:#8b98ff; --team:#e584d0; --hidden:#e3b25a; color-scheme:dark}
+
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+.wrap{max-width:1080px;margin:0 auto;padding-block:32px 56px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+header{display:grid;gap:10px;margin-bottom:24px}
+.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(34px,6vw,58px);line-height:.95;margin:0;text-wrap:balance;letter-spacing:-.02em}
+h1 em{font-style:normal;color:var(--accent)}
+.lede{color:var(--muted);max-width:60ch;margin:0}
+
+.filters{display:flex;flex-wrap:wrap;gap:18px;margin:8px 0 22px}
+.fgroup{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.fgroup span{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-right:4px}
+.chip{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);
+  padding:6px 12px;border-radius:999px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip:focus-visible,.game:focus-visible,.close:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.count{font-size:13px;color:var(--muted);margin-bottom:12px;font-variant-numeric:tabular-nums}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.game{all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:10px 1fr;
+  background:var(--surface);border:1px solid var(--line);border-radius:6px;overflow:hidden;min-width:0;
+  transition:transform .15s ease, border-color .15s ease}
+.game:hover{transform:translateY(-2px);border-color:var(--muted)}
+.spine{background:var(--c)}
+.gbody{padding:14px 14px 12px;display:grid;gap:6px;min-width:0}
+.gname{font-family:var(--display);font-weight:800;font-size:20px;line-height:1.1;letter-spacing:-.01em}
+.gtag{font-size:13.5px;color:var(--muted)}
+.meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.pill{font-size:12px;padding:2px 8px;border-radius:999px;background:var(--chip);color:var(--ink);font-variant-numeric:tabular-nums}
+.pill.dyn{color:var(--bg);background:var(--c);font-weight:700}
+
+dialog{border:none;padding:0;background:var(--surface);color:var(--ink);border-radius:10px;
+  width:min(560px, calc(100vw - 32px));max-height:calc(100vh - 48px);box-shadow:0 20px 60px rgba(0,0,0,.35)}
+dialog::backdrop{background:rgba(15,13,25,.55)}
+.dhead{background:var(--c);color:#fff;padding:22px 22px 18px;position:relative}
+.dhead .eyebrow{color:rgba(255,255,255,.8)}
+.dhead h2{font-family:var(--display);font-weight:800;font-size:32px;line-height:1;margin:6px 0 0;text-wrap:balance}
+.close{position:absolute;top:12px;right:12px;font:inherit;font-size:20px;line-height:1;border:none;cursor:pointer;
+  background:rgba(255,255,255,.2);color:#fff;width:34px;height:34px;border-radius:50%}
+.dbody{padding:20px 22px 24px;display:grid;gap:16px}
+.dbody h3{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 4px}
+.dbody p{margin:0;max-width:62ch}
+.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.fact{border:1px solid var(--line);border-radius:6px;padding:8px 10px}
+.fact b{display:block;font-family:var(--display);font-size:18px;font-variant-numeric:tabular-nums}
+.fact small{color:var(--muted);font-size:12px}
+.range{display:flex;gap:4px;align-items:end}
+.range i{flex:1;height:10px;border-radius:2px;background:var(--chip)}
+.range i.on{background:color-mix(in srgb,var(--c) 45%, var(--chip))}
+.range i.four{background:var(--c);height:18px}
+.rlabels{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;margin-top:3px}
+@media (max-width:440px){.facts{grid-template-columns:1fr 1fr}}
+@media (prefers-reduced-motion:reduce){.game{transition:none}.game:hover{transform:none}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Ludothèque Monge · sélection 4 joueurs</div>
+    <h1>Quoi sortir <em>à quatre</em> avec les collègues</h1>
+    <p class="lede">23 jeux de l'étagère qui tournent bien à 4, triés pour un groupe qui ne joue pas forcément ensemble tous les jours. Clique sur une boîte pour le pitch et la dynamique de table.</p>
+  </header>
+
+  <div class="filters">
+    <div class="fgroup" id="f-dyn"><span>Dynamique</span></div>
+    <div class="fgroup" id="f-time"><span>Durée</span></div>
+  </div>
+  <div class="count" id="count"></div>
+  <div class="grid" id="grid"></div>
+</div>
+
+<dialog id="dlg" aria-labelledby="d-title">
+  <div class="dhead">
+    <div class="eyebrow" id="d-cat"></div>
+    <h2 id="d-title"></h2>
+    <button class="close" id="d-close" aria-label="Fermer">×</button>
+  </div>
+  <div class="dbody">
+    <div><h3>Le jeu</h3><p id="d-pitch"></p></div>
+    <div><h3>La dynamique à table</h3><p id="d-dyn"></p></div>
+    <div class="facts">
+      <div class="fact"><b id="d-time"></b><small>durée boîte</small></div>
+      <div class="fact"><b id="d-cx"></b><small>prise en main</small></div>
+      <div class="fact"><b id="d-own"></b><small>qui l'a</small></div>
+    </div>
+    <div>
+      <h3>Joueurs</h3>
+      <div class="range" id="d-range"></div>
+      <div class="rlabels" id="d-rl"></div>
+    </div>
+  </div>
+</dialog>
+
+<script>
+const DYN = {
+  coop:  {label:"Coop", color:"var(--coop)"},
+  solo:  {label:"Chacun pour soi", color:"var(--solo)"},
+  team:  {label:"2 contre 2", color:"var(--team)"},
+  hidden:{label:"Bluff & rôles cachés", color:"var(--hidden)"}
+};
+const TIME = {short:"Pause déj · ≤ 20 min", mid:"Afterwork · 30–45 min", long:"Soirée · 1 h et +"};
+
+const GAMES = [
+ {n:"The Mind", d:"coop", t:"short", min:2, max:4, dur:"20 min", cx:"2 min", own:"?",
+  tag:"Poser des cartes dans l'ordre… sans se parler.",
+  p:"Chacun a des cartes numérotées de 1 à 100. Ensemble, vous devez les poser au centre dans l'ordre croissant, sans aucune communication. Les niveaux augmentent le nombre de cartes en main.",
+  y:"Silence total, regards appuyés et fous rires quand quelqu'un pose un 87 trop tôt. Excellent brise-glace : aucune règle à retenir, et on apprend vite le rythme des autres."},
+ {n:"Bomb Busters", d:"coop", t:"short", min:2, max:5, dur:"20 min", cx:"5 min", own:"Guigz", star:4,
+  tag:"Désamorcer une bombe par déduction collective.",
+  p:"Chacun a une rangée de fils numérotés cachés. À tour de rôle, on désigne un fil chez un partenaire en annonçant sa valeur : si c'est juste, on coupe ; sinon, la bombe se rapproche de l'explosion. Des dizaines de missions de plus en plus corsées.",
+  y:"Réflexion à voix haute, déductions partagées, petite tension à chaque coupe. Très bien pour une équipe qui aime raisonner ensemble, et on enchaîne les missions."},
+ {n:"Qwixx", d:"solo", t:"short", min:2, max:5, dur:"15 min", cx:"2 min", own:"Clem",
+  tag:"Cocher des cases avec les dés de tout le monde.",
+  p:"On lance des dés de couleur et chacun coche des chiffres sur quatre lignes, en ordre croissant ou décroissant. Tout le monde peut utiliser le lancer des autres, donc personne n'attend son tour.",
+  y:"Zéro temps mort, tout le monde joue à chaque lancer. Parfait sur une pause déj où on n'a pas envie de réfléchir trop fort."},
+ {n:"Trio", d:"solo", t:"short", min:3, max:6, dur:"15 min", cx:"3 min", own:"Guigz",
+  tag:"Mémoire et déduction pour réunir trois cartes identiques.",
+  p:"On révèle des cartes : la plus petite ou la plus grande de la main d'un joueur, ou une carte face cachée au centre. Le but est de retourner trois cartes identiques d'affilée pour gagner le trio.",
+  y:"On se surveille, on se trompe, on se moque gentiment de sa propre mémoire. Les règles s'expliquent en deux phrases."},
+ {n:"Flip 7", d:"solo", t:"short", min:3, max:18, dur:"20 min", cx:"1 min", own:"coloc", star:3,
+  tag:"Retourner une carte de plus… ou pas.",
+  p:"Push-your-luck pur : on retourne des cartes une par une, sans jamais tomber sur un doublon. On s'arrête quand on veut pour sécuriser ses points ; 7 cartes différentes donnent un gros bonus.",
+  y:"Bruyant et chambreur, avec des « allez, encore une » collectifs. Idéal pour lancer une session ou finir sur une note légère."},
+ {n:"Love Letter", d:"solo", t:"short", min:2, max:4, dur:"20 min", cx:"3 min", own:"Clem",
+  tag:"16 cartes, une main d'une carte, beaucoup de déduction.",
+  p:"Chacun a une seule carte en main et en pioche une seconde à son tour avant d'en jouer une. Chaque personnage a un pouvoir : deviner la main d'un adversaire, comparer, protéger… Le dernier en lice ou la plus haute carte remporte la manche.",
+  y:"Manches de deux minutes, éliminations rapides et coups de bluff. Petite boîte qui tient dans une poche de veste."},
+ {n:"Time Bomb", d:"hidden", t:"short", min:4, max:8, dur:"15 min", cx:"3 min", own:"Clem",
+  tag:"Équipe Sherlock contre équipe Moriarty, rôles secrets.",
+  p:"Chacun reçoit un rôle secret et des fils à couper. Les Sherlock veulent trouver tous les fils de désamorçage, les Moriarty veulent faire exploser la bombe. On annonce ce qu'on a en main, et on peut mentir.",
+  y:"Accusations, alibis et mauvaise foi assumée. À 4 c'est serré et intense ; à éviter si un collègue déteste le conflit, même pour rire."},
+ {n:"Code Names Images", d:"team", t:"short", min:4, max:8, dur:"15 min", cx:"3 min", own:"Clem",
+  tag:"Faire deviner des images avec un seul mot.",
+  p:"Deux équipes, un espion par équipe. L'espion donne un mot et un nombre pour faire deviner plusieurs images de son camp, en évitant celles de l'adversaire et l'assassin.",
+  y:"À 4, ça fait du 2 contre 2 : bon test de complicité entre collègues. Les débats entre devineurs sont la moitié du plaisir."},
+ {n:"Magic Maze", d:"coop", t:"short", min:1, max:8, dur:"15–30 min", cx:"10 min", own:"Clem",
+  tag:"Braquage en temps réel, chacun contrôle une direction.",
+  p:"Quatre héros doivent voler leur équipement dans un centre commercial et s'enfuir avant la fin du sablier. Personne ne contrôle un pion : chacun a une action (aller au nord, prendre un escalator…) valable pour tous les pions.",
+  y:"Interdiction de parler, sauf un gros pion « Fais quelque chose ! » qu'on pose devant le collègue qui n'a pas vu. Chaotique et très drôle."},
+ {n:"Hanabi", d:"coop", t:"mid", min:2, max:5, dur:"30 min", cx:"5 min", own:"Fab",
+  tag:"Tu vois les cartes de tout le monde, sauf les tiennes.",
+  p:"On tient ses cartes à l'envers. Ensemble, on construit des feux d'artifice par couleur en posant les cartes dans l'ordre. Les indices sont limités et très encadrés : uniquement une couleur ou une valeur.",
+  y:"Coop calme et cérébral, où on apprend à lire les intentions des autres. Bien pour un groupe posé ; moins pour un groupe qui veut rigoler fort."},
+ {n:"Top Ten", d:"coop", t:"mid", min:4, max:9, dur:"30 min", cx:"3 min", own:"Guigz",
+  tag:"Classer des réponses absurdes de 1 à 10.",
+  p:"Chacun a un chiffre secret de 1 à 10. On tire un thème (« une excuse pour arriver en retard, de nulle à parfaite ») et chacun répond selon son chiffre. Le capitaine doit remettre tout le monde dans l'ordre.",
+  y:"Le meilleur jeu de la liste pour se découvrir entre collègues. On rit beaucoup et personne ne perd vraiment."},
+ {n:"Micro Macro : Crime City", d:"coop", t:"mid", min:1, max:4, dur:"15–45 min", cx:"2 min", own:"Guigz",
+  tag:"Enquêtes « Où est Charlie » sur un plan de ville géant.",
+  p:"Un immense plan en noir et blanc fourmille de scènes. Chaque affaire pose des questions (qui, comment, pourquoi) et on retrace l'histoire en repérant les indices dans le dessin.",
+  y:"Tout le monde penché sur la même carte, à pointer du doigt. Zéro compétition, on peut faire une ou deux affaires sur une pause."},
+ {n:"Skull King", d:"solo", t:"mid", min:2, max:6, dur:"30 min", cx:"10 min", own:"Guigz",
+  tag:"Jeu de plis où il faut parier juste.",
+  p:"À chaque manche, on annonce combien de plis on va remporter. Pirates, sirènes et Skull King bousculent les plis classiques. On marque seulement si on tombe pile sur son pari.",
+  y:"Très interactif : on fait perdre les autres autant qu'on joue pour soi. Monte bien en tension au fil des manches."},
+ {n:"Perudo", d:"hidden", t:"mid", min:2, max:6, dur:"30 min", cx:"3 min", own:"Guigz",
+  tag:"Bluff aux dés sous gobelet.",
+  p:"Chacun secoue ses dés sous un gobelet. On enchérit sur le nombre total de dés d'une valeur sur toute la table (« six 4 »). Le suivant surenchérit ou crie « dudo » ; le perdant perd un dé.",
+  y:"Bruit de gobelets, regards en coin et poker face. Règles en une minute et ambiance garantie."},
+ {n:"Courtisans", d:"hidden", t:"mid", min:2, max:6, dur:"30 min", cx:"5 min", own:"Guigz",
+  tag:"Influencer la cour de la Reine, missions secrètes.",
+  p:"À son tour, on joue trois cartes : une qui rend une famille favorable à la cour, une qui la discrédite, une qu'on garde pour son domaine. Des missions secrètes donnent des points bonus.",
+  y:"Coups de couteau dans le dos feutrés et rapides. On voit vite qui est le stratège sournois de l'équipe."},
+ {n:"Cascadia", d:"solo", t:"mid", min:1, max:4, dur:"30–45 min", cx:"10 min", own:"Guigz",
+  tag:"Composer un paysage et y placer des animaux.",
+  p:"On drafte des tuiles d'habitat et des jetons animaux pour bâtir son coin de nature. Chaque espèce score selon un motif (ours en paires, saumons en rivière…).",
+  y:"Peu d'interaction, ambiance détendue, chacun construit son joli puzzle. Bien pour un groupe qui préfère réfléchir sans se taper dessus."},
+ {n:"Carcassonne", d:"solo", t:"mid", min:2, max:5, dur:"35 min", cx:"5 min", own:"Fab",
+  tag:"Poser des tuiles pour bâtir villes, routes et abbayes.",
+  p:"On pioche une tuile, on la pose pour agrandir le paysage commun, puis on peut y placer un partisan pour revendiquer une ville, une route ou un pré.",
+  y:"Classique ultra accessible. On partage un même territoire, donc on se pique des villes et on coopère à contrecœur."},
+ {n:"7 Wonders", d:"solo", t:"mid", min:3, max:7, dur:"30 min", cx:"15 min", own:"Fab",
+  tag:"Draft simultané pour développer sa civilisation.",
+  p:"Sur trois âges, chacun choisit une carte dans sa main et passe le reste à son voisin. On construit ressources, armée, science et bâtiments pour marquer le plus de points.",
+  y:"Tout le monde joue en même temps, donc ça va vite même à 4. Première partie un peu dense, ensuite ça roule."},
+ {n:"Mysterium", d:"coop", t:"mid", min:2, max:7, dur:"42 min", cx:"10 min", own:"Fab",
+  tag:"Un fantôme muet, des médiums qui interprètent des rêves.",
+  p:"Un joueur incarne le fantôme et ne parle pas. Il envoie des cartes-visions très illustrées pour orienter chaque médium vers un suspect, un lieu et une arme. Les médiums débattent pour interpréter.",
+  y:"À 4, ça fait un fantôme et trois médiums. Débats passionnés sur des dessins abstraits ; bien pour un groupe imaginatif."},
+ {n:"Pandemic", d:"coop", t:"long", min:2, max:4, dur:"45 min", cx:"15 min", own:"Fab",
+  tag:"Endiguer quatre épidémies mondiales en équipe.",
+  p:"Chacun a un rôle spécial (médecin, chercheuse, logisticien…). On voyage, on soigne et on échange des cartes pour découvrir les quatre remèdes avant que les foyers ne débordent.",
+  y:"Réunion de crise sur plateau : on planifie ensemble à voix haute. Attention au collègue qui veut jouer pour tout le monde."},
+ {n:"Challengers!", d:"solo", t:"long", min:1, max:8, dur:"45–60 min", cx:"10 min", own:"Guigz", star:4,
+  tag:"Tournoi de deck-building en duels automatiques.",
+  p:"À chaque manche, on ajoute des cartes à son paquet, puis on affronte un adversaire en duel. Les combats se jouent presque tout seuls ; tout se décide dans la construction du deck.",
+  y:"Facile à apprendre, très fun à regarder. Les duels tournent, donc tout le monde affronte tout le monde."},
+ {n:"Catane", d:"solo", t:"long", min:3, max:4, dur:"75 min", cx:"15 min", own:"Fab", star:4,
+  tag:"Coloniser une île en commerçant ses ressources.",
+  p:"On lance les dés pour produire bois, argile, laine, blé et minerai, qu'on échange pour construire routes, colonies et villes. Premier à 10 points.",
+  y:"Les négociations font tout le sel : alliances d'un tour et trahisons commerciales. Format pile poil 4 joueurs."},
+ {n:"Smallworld", d:"solo", t:"long", min:2, max:5, dur:"40–80 min", cx:"15 min", own:"Guigz", star:5,
+  tag:"Conquérir un monde trop petit avec des peuples farfelus.",
+  p:"Chacun choisit un combo peuple + pouvoir (« Elfes volants », « Trolls marchands »…), conquiert des régions, puis met ce peuple en déclin pour en prendre un nouveau.",
+  y:"Conflit direct mais bon enfant, combos absurdes qui font rire. Plateau taillé pour 4, et c'est le chouchou de la coloc."}
+];
+
+const grid = document.getElementById('grid'), cnt = document.getElementById('count');
+const state = {dyn:"all", time:"all"};
+
+function chips(id, key, opts){
+  const box = document.getElementById(id);
+  [["all","Tous"], ...Object.entries(opts).map(([k,v])=>[k, v.label||v])].forEach(([k,l])=>{
+    const b = document.createElement('button');
+    b.className='chip'; b.type='button'; b.id=`chip-${key}-${k}`; b.textContent=l;
+    b.setAttribute('aria-pressed', k==="all");
+    b.onclick=()=>{state[key]=k; box.querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed', c===b)); render();};
+    box.appendChild(b);
+  });
+}
+chips('f-dyn','dyn',DYN); chips('f-time','time',TIME);
+
+function stars(n){return n ? "★".repeat(n)+"☆".repeat(5-n) : ""}
+
+function render(){
+  grid.innerHTML='';
+  const list = GAMES.filter(g=>(state.dyn==="all"||g.d===state.dyn)&&(state.time==="all"||g.t===state.time));
+  cnt.textContent = `${list.length} jeu${list.length>1?'x':''}`;
+  list.forEach(g=>{
+    const b=document.createElement('button');
+    b.className='game'; b.type='button'; b.style.setProperty('--c', DYN[g.d].color);
+    b.innerHTML=`<div class="spine"></div><div class="gbody">
+      <div class="gname"></div><div class="gtag"></div>
+      <div class="meta"><span class="pill dyn">${DYN[g.d].label}</span><span class="pill">${g.dur}</span>${g.star?`<span class="pill" title="Note de la coloc">${stars(g.star)}</span>`:''}</div></div>`;
+    b.querySelector('.gname').textContent=g.n; b.querySelector('.gtag').textContent=g.tag;
+    b.onclick=()=>open(g);
+    grid.appendChild(b);
+  });
+}
+
+const dlg=document.getElementById('dlg');
+function open(g){
+  dlg.style.setProperty('--c', DYN[g.d].color);
+  document.getElementById('d-cat').textContent = DYN[g.d].label + " · " + TIME[g.t].split(' · ')[0];
+  document.getElementById('d-title').textContent=g.n;
+  document.getElementById('d-pitch').textContent=g.p;
+  document.getElementById('d-dyn').textContent=g.y;
+  document.getElementById('d-time').textContent=g.dur;
+  document.getElementById('d-cx').textContent=g.cx;
+  document.getElementById('d-own').textContent=g.own;
+  const top=Math.min(Math.max(g.max,8),10), r=document.getElementById('d-range');
+  r.innerHTML='';
+  for(let i=1;i<=top;i++){const s=document.createElement('i'); if(i>=g.min&&i<=g.max) s.className = i===4?'on four':'on'; r.appendChild(s);}
+  document.getElementById('d-rl').innerHTML = `<span>1</span><span>${g.min}–${g.max} joueurs · vous êtes 4</span><span>${top}${g.max>top?'+':''}</span>`;
+  dlg.showModal();
+}
+document.getElementById('d-close').onclick=()=>dlg.close();
+dlg.addEventListener('click',e=>{ if(e.target===dlg) dlg.close(); });
+render();
+</script>
+</body>
+</html>
